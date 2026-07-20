@@ -8,8 +8,8 @@ import time as pytime
 
 import gradio as gr
 
-from meal_plan_generator import MealPlanGenerator
-from email_utils import send_meal_plan_email
+from .meal_plan_generator import MealPlanGenerator
+from .email_utils import send_meal_plan_email
 from path2.dataset_evaluation import run_basic_validation
 
 

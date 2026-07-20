@@ -1,8 +1,8 @@
 """LangSmith LLM-as-judge evaluators, built on a shared judge helper
 to eliminate the 3x-repeated 'call LLM, parse JSON response' pattern."""
 
-from json_utils import parse_json_response
-from prompts import get_llm
+from .json_utils import parse_json_response
+from .prompts import get_llm
 
 
 def _run_llm_judge(prompt: str, eval_key: str) -> dict:

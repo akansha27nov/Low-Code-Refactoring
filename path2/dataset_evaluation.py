@@ -7,7 +7,7 @@ doesn't exist yet"), making failures impossible to diagnose.
 
 from langsmith.utils import LangSmithNotFoundError
 
-from meal_plan_generator import MealPlanGenerator
+from .meal_plan_generator import MealPlanGenerator
 from path2.evaluators import shopping_list_completeness, theme_uniqueness, dietary_compliance
 
 TEST_CASES = [

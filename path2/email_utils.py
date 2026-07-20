@@ -8,7 +8,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-from meal_planner_config import EMAIL_SENDER, EMAIL_PASSWORD
+from .meal_planner_config import EMAIL_SENDER, EMAIL_PASSWORD
 
 
 def format_meal_plan_email(meal_plan: dict) -> str:

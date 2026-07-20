@@ -3,7 +3,7 @@ Relocated from the notebook — updated to strongly enforce structure."""
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from meal_planner_config import OPENAI_MODEL, TEMPERATURE
+from .meal_planner_config import OPENAI_MODEL, TEMPERATURE
 
 def get_llm() -> ChatOpenAI:
     """Get the configured LLM instance."""

@@ -4,8 +4,7 @@ these were already well-structured, just misplaced in a monolithic cell."""
 from enum import Enum
 from typing import List
 from pydantic import BaseModel, Field, field_validator
-from meal_planner_config import INGREDIENTS_PER_RECIPE
-
+from .meal_planner_config import INGREDIENTS_PER_RECIPE
 
 class DietaryPreference(str, Enum):
     OMNIVORE = "omnivore"

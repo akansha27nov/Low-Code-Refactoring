@@ -5,9 +5,9 @@ from pydantic import ValidationError
 from langsmith import traceable
 from langchain_core.output_parsers import JsonOutputParser
 
-from prompts import MEAL_PLAN_PROMPT, get_llm
-from json_utils import parse_json_response
-from models import MealPlan
+from .prompts import MEAL_PLAN_PROMPT, get_llm
+from .json_utils import parse_json_response
+from .models import MealPlan
 
 
 class MealPlanGenerator:

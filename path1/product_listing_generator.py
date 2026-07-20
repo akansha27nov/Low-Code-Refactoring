@@ -6,13 +6,13 @@ Description: Use ChatGPT's vision capabilities to generate compelling product li
 
 import json
 from openai import OpenAI
-from image_utils import encode_image_to_base64
-from prompt_builder import create_product_listing_prompt
-from data_loader import load_product_dataset
-from config import validate_config, OPENAI_API_KEY, DATA_DIR, IMAGES_DIR, OUTPUT_FILE, MAX_IMAGES_TO_SAVE
-from api_client import OpenAIListingClient
-from config import MODEL_NAME, MAX_TOKENS, TEMPERATURE
-from logging_config import setup_logging
+from .image_utils import encode_image_to_base64
+from .prompt_builder import create_product_listing_prompt
+from .data_loader import load_product_dataset
+from .config import validate_config, OPENAI_API_KEY, DATA_DIR, IMAGES_DIR, OUTPUT_FILE, MAX_IMAGES_TO_SAVE
+from .api_client import OpenAIListingClient
+from .config import MODEL_NAME, MAX_TOKENS, TEMPERATURE
+from .logging_config import setup_logging
 
 # ======================================================
 # Step 1: Initialize client with open ai key
