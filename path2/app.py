@@ -10,7 +10,7 @@ import gradio as gr
 
 from meal_plan_generator import MealPlanGenerator
 from email_utils import send_meal_plan_email
-from dataset_evaluation import run_basic_validation
+from path2.dataset_evaluation import run_basic_validation
 
 
 def format_shopping_list(meal_plan: dict) -> str:
