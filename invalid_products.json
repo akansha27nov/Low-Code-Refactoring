@@ -1,0 +1,17 @@
+{
+  "products": [
+    {
+      "id": "P004",
+      "category": "Electronics",
+      "price": -19.99,
+      "features": ["Missing name field", "Negative price"]
+    },
+    {
+      "id": "P005",
+      "name": "Broken Item",
+      "category": "Misc",
+      "price": -5.00,
+      "features": []
+    }
+  ]
+}

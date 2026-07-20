@@ -4,19 +4,15 @@ Author: Akansha Verma
 Description: Use ChatGPT's vision capabilities to generate compelling product listings automatically
 """
 
-import os
 import json
-import base64
-import pandas as pd
-from datasets import load_dataset
-from pathlib import Path
-from io import BytesIO
 from openai import OpenAI
-from dotenv import load_dotenv
 from image_utils import encode_image_to_base64
 from prompt_builder import create_product_listing_prompt
 from data_loader import load_product_dataset
 from config import validate_config, OPENAI_API_KEY, DATA_DIR, IMAGES_DIR, OUTPUT_FILE, MAX_IMAGES_TO_SAVE
+from api_client import OpenAIListingClient
+from config import MODEL_NAME, MAX_TOKENS, TEMPERATURE
+from logging_config import setup_logging
 
 # ======================================================
 # Step 1: Initialize client with open ai key
@@ -25,6 +21,14 @@ from config import validate_config, OPENAI_API_KEY, DATA_DIR, IMAGES_DIR, OUTPUT
 validate_config()
 client = OpenAI(api_key=OPENAI_API_KEY)
 
+listing_client = OpenAIListingClient(
+    api_key=OPENAI_API_KEY,
+    model=MODEL_NAME,
+    max_tokens=MAX_TOKENS,
+    temperature=TEMPERATURE
+)
+
+logger = setup_logging()
 # ======================================================
 # Step 2: Preparing the Dataset
 # =======================================================
@@ -34,7 +38,7 @@ IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 # Load dataset from HuggingFace
 print("Loading product dataset...")
 products_df = load_product_dataset()
-print(f"✓ Loaded {len(products_df)} products")
+logger.info(f"Loaded {len(products_df)} products")
 print(f"Dataset columns: {products_df.columns.to_list()}")
 # save images locally
 print("Saving images locally...")
@@ -75,40 +79,12 @@ print(test_prompt[:500] + "...")  # Show first 500 characters
 # Step 5: Calling the ChatGPT API with Vision
 # =======================================================
 
-def generate_product_listing(encoded_image, prompt_txt):
-    """Sends image and prompt to OpenAI and parses JSON."""
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "user", "content": [
-                        {"type": "text", "text": prompt_txt},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{encoded_image}"
-                            }
-                        }
-                    ]
-                }
-            ],
-            max_tokens=500,
-            temperature=0.6,
-            response_format={"type": "json_object"}
-        )
-        content = response.choices[0].message.content
-        return json.loads(content)
-    
-    except Exception as e:
-        print(f"API Call Failed: {e}")
-        return None
-
 print("\n" + "="*50)
 print("TEST")
 print("="*50)
 encoded_img = encode_image_to_base64(products_df.iloc[0]["image"])
 listing_prompt = create_product_listing_prompt(products_df.iloc[0])
-product_json = generate_product_listing(encoded_img, listing_prompt)
+product_json = listing_client.generate_listing(encoded_img, listing_prompt)
 
 if product_json:
     print("✓ Successfully generated listing:")
@@ -127,14 +103,14 @@ for index, row in products_df.iterrows():
     try:
         encoded_img = encode_image_to_base64(row["image"])
     except ValueError as e:
-        print(f"[main] Skipping row {index}: image encoding failed\n{e}")
+        logger.warning(f"Skipping row {index}: image encoding failed - {e}")
         continue
 
         
     # create prompt
     try:
         prompt = create_product_listing_prompt(row)
-        result = generate_product_listing(encoded_img, prompt)
+        result = listing_client.generate_listing(encoded_img, prompt)
     except Exception as e:
         print(
             f"[main] {type(e).__name__} at row {index} during API call: {e}\n"
