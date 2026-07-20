@@ -33,7 +33,7 @@ images_dir.mkdir(parents=True, exist_ok=True)
 print("Loading product dataset...")
 try:
     # Try loading the dataset
-    dataset = load_dataset("ashraq/fashion-product-images-small", split="train[:50]")
+    dataset = load_dataset("ashraq/fashion-product-images-small", split="train[:10]")
     print(f"✓ Loaded {len(dataset)} products")
     print(dataset)
     # print(dataset[0]['image'].show()) # show first sample image

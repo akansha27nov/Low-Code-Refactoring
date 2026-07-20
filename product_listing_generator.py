@@ -109,7 +109,7 @@ for index, row in products_df.iterrows():
         
     # create prompt
     try:
-        prompt = create_product_listing_prompt(row)
+        prompt = create_product_listing_prompt(row)   
         result = listing_client.generate_listing(encoded_img, prompt)
     except Exception as e:
         print(
@@ -123,7 +123,7 @@ for index, row in products_df.iterrows():
     if result:
         result["product_id"] = row.get("id") # Keep track of which product this is
         all_results.append(result)
-            
+        
         try:
             with open(OUTPUT_FILE, "w") as f:
                 json.dump(all_results, f, indent=4)

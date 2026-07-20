@@ -5,7 +5,7 @@ from datasets import load_dataset
 
 
 def load_product_dataset(dataset_name: str = "ashraq/fashion-product-images-small",
-                          split: str = "train[:50]") -> pd.DataFrame:
+                          split: str = "train[:10]") -> pd.DataFrame:
     """
     Load the product dataset from HuggingFace and return it as a DataFrame.
 
