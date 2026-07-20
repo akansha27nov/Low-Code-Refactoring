@@ -28,7 +28,7 @@ def encode_image_to_base64(image) -> str:
         buffered = BytesIO()
         image.save(buffered, format="JPEG")
         return base64.b64encode(buffered.getvalue()).decode("utf-8")
-    except Exception as e:
+    except (OSError, ValueError, TypeError) as e:
         raise ValueError(
             f"[encode_image_to_base64] {type(e).__name__}: {e}\n"
             f"Context: failed while saving image to JPEG buffer.\n"

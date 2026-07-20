@@ -14,58 +14,37 @@ from io import BytesIO
 from openai import OpenAI
 from dotenv import load_dotenv
 from image_utils import encode_image_to_base64
+from prompt_builder import create_product_listing_prompt
+from data_loader import load_product_dataset
+from config import validate_config, OPENAI_API_KEY, DATA_DIR, IMAGES_DIR, OUTPUT_FILE, MAX_IMAGES_TO_SAVE
 
 # ======================================================
 # Step 1: Initialize client with open ai key
 # =======================================================
-load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+validate_config()
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 # ======================================================
 # Step 2: Preparing the Dataset
 # =======================================================
 
-DATA_DIR = Path("data")
-# Create images directory
-images_dir = DATA_DIR / "product_images"
-images_dir.mkdir(parents=True, exist_ok=True)
+IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 # Load dataset from HuggingFace
 print("Loading product dataset...")
-try:
-    # Try loading the dataset
-    dataset = load_dataset("ashraq/fashion-product-images-small", split="train[:50]")
-    print(f"✓ Loaded {len(dataset)} products")
-    print(dataset)
-    # print(dataset[0]['image'].show()) # show first sample image
-    products_df = pd.DataFrame(dataset)
-    print(f"Dataset columns: {products_df.columns.to_list()}")
-    
-    # save image files locally from dataset
-    print("Processing and saving images to avoid reading dataset all the time...")
-    for i, item in enumerate(dataset):
-        img = item["image"]
-        img.save(f"{images_dir}/{i}.jpg")
-        if i >= 100:
-            break
-    
-except Exception as e:
-    print(f"⚠ Could not load HuggingFace dataset: {e}")
-    print("Using local images instead...")
-    # Alternative: Use local images
-    # Create a products.json file with product information
-    products_data = [
-        {
-            "id": 1,
-            "name": "Wireless Headphones",
-            "price": 79.99,
-            "category": "Electronics",
-            "image_path": "images/product1.jpg"
-        },
-        # Add more products...
-    ]
-    
-    products_df = pd.DataFrame(products_data)
+products_df = load_product_dataset()
+print(f"✓ Loaded {len(products_df)} products")
+print(f"Dataset columns: {products_df.columns.to_list()}")
+# save images locally
+print("Saving images locally...")
+for i, row in products_df.iterrows():
+    try:
+        row["image"].save(f"{IMAGES_DIR}/{i}.jpg")
+    except Exception as e:
+        print(f"[main] Warning: could not save image {i}: {e}")
+    if i >= MAX_IMAGES_TO_SAVE:
+        break
  
 print(f"\n✓ Dataset prepared!")
 print(f"Total products: {len(products_df)}")
@@ -83,52 +62,6 @@ print(f"Encoded prefix: {encoded_image[:40]}...")
 # ======================================================
 # Step 4: Creating the Product Listing Prompt
 # =======================================================
-def create_product_listing_prompt(product):
-    """
-    Create a prompt for generating product listings.
-    
-    Parameters:
-    - product_name: Name of the product
-    - price: Price of the product
-    - category: Product category
-    - additional_info: Optional additional information
-    
-    Returns:
-    - Formatted prompt string
-    """
-    
-    prompt = f"""
-    Role: You are an expert e-commerce copywriter. 
-    Task: Analyze the product image and create a compelling product listing.
-    Product Information:
-    - Name: {product.get('productDisplayName', 'Unknown Product')}
-    - Category: {product.get('masterCategory', 'N/A')}
-    - Gender: {product.get('gender', 'Unisex')}
-    - Color: {product.get("baseColour", "N/A")}
-    - Season: {product.get("season", "N/A")}
-    - Usage: {product.get("usage", "N/A")}
-    
-    Please create a professional product listing that includes:
- 
-    1. **Product Title** (catchy, SEO-friendly, 60 characters max)
-    2. **Product Description** (detailed,engaging, 150-200 words)
-        - Highlight key features and benefits
-        - Use persuasive language
-        - Include relevant details visible in the image
-    3. **Key Features** (bullet points, 5-7 items)
-    4. **SEO Keywords** (comma-separated, 10-15 relevant keywords)
-    
-    Format your response as JSON with the following structure:
-    {{
-        "title": "Product title here",
-        "description": "Full description here",
-        "features": ["Feature 1", "Feature 2", ...],
-        "keywords": "keyword1, keyword2, ..."
-    }}
-    
-    Be specific about what you see in the image. Mention colors, materials, design elements, and any distinctive features."""
-
-    return prompt
  
 print("\n" + "="*50)
 print("PROMPT TEMPLATE")
@@ -184,38 +117,49 @@ if product_json:
 # =======================================================
 # Step 6: Processing Multiple Products
 # =======================================================
-
-output_file = DATA_DIR / "processed_listings.json"
 all_results = []
 
 print(f"Starting batch processing for {len(products_df)} products...")
 for index, row in products_df.iterrows():
-    try:
-        print(f"[{index + 1}/{len(products_df)}] Processing: {row.get('productDisplayName', 'Unknown')}")
+    print(f"[{index + 1}/{len(products_df)}] Processing: {row.get('productDisplayName', 'Unknown')}")
         
         # encode image
+    try:
         encoded_img = encode_image_to_base64(row["image"])
-        
-        # create prompt
-        prompt = create_product_listing_prompt(row)
-        
-        # call open API
-        result = generate_product_listing(encoded_img, prompt)
-        
-        # save result
-        if result:
-            result["product_id"] = row.get("id") # Keep track of which product this is
-            all_results.append(result)
-            
-            # Save progress incrementally to disk
-            with open(output_file, "w") as f:
-                json.dump(all_results, f, indent=4)
-        
-    except Exception as e:
-        print(f"⚠ Error processing index {index}: {e}")
+    except ValueError as e:
+        print(f"[main] Skipping row {index}: image encoding failed\n{e}")
         continue
 
-print(f"\n✓ Batch complete! Results saved to {output_file}")
+        
+    # create prompt
+    try:
+        prompt = create_product_listing_prompt(row)
+        result = generate_product_listing(encoded_img, prompt)
+    except Exception as e:
+        print(
+            f"[main] {type(e).__name__} at row {index} during API call: {e}\n"
+            f"Context: product='{row.get('productDisplayName', 'unknown')}'\n"
+            f"Suggestion: check API key, rate limits, or network connection."
+        )
+        continue
+        
+    # save result
+    if result:
+        result["product_id"] = row.get("id") # Keep track of which product this is
+        all_results.append(result)
+            
+        try:
+            with open(OUTPUT_FILE, "w") as f:
+                json.dump(all_results, f, indent=4)
+        except OSError as e:
+            print(
+                f"[main] {type(e).__name__} while saving results at row {index}: {e}\n"
+                f"Context: writing to {OUTPUT_FILE}\n"
+                f"Suggestion: check disk space, write permissions, or that the parent directory exists."
+            )
+        
+
+print(f"\n✓ Batch complete! Results saved to {OUTPUT_FILE}")
 
 print("\n" + "="*50)
 print("BATCH PROCESSING SUMMARY")
